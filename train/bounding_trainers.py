@@ -1,4 +1,5 @@
 import trl
+import gc
 from copy import deepcopy
 import torch
 import torch.amp as amp
@@ -151,6 +152,13 @@ class BoundingTrainer(trl.SFTTrainer):
         model, *_ = deepspeed.initialize(model=model, config=config_kwargs)
         model.eval()
         return model
+    
+    def training_step(self, model, inputs):
+        loss_step = super().training_step(model, inputs)
+        torch.cuda.empty_cache()
+        gc.collect()
+        # get_accelerator().empty_cache()
+        return loss_step
     
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         """
